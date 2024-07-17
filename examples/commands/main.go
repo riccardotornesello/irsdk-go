@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/quimcalpe/iracing-sdk"
+	"github.com/riccardotornesello/irsdk-go"
 )
 
 func main() {

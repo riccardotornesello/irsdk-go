@@ -2,14 +2,15 @@ package irsdk
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/hidez8891/shm"
-	"github.com/quimcalpe/iracing-sdk/lib/winevents"
+	"github.com/riccardotornesello/irsdk-go/lib/winevents"
 )
 
 // IRSDK is the main SDK object clients must use
