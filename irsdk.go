@@ -2,8 +2,8 @@ package irsdk
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -78,19 +78,43 @@ func (sdk *IRSDK) IsConnected() bool {
 }
 
 // ExportTo exports current memory data to a file
-func (sdk *IRSDK) ExportIbtTo(fileName string) {
+func (sdk *IRSDK) ExportIbtTo(fileName string) error {
 	rbuf := make([]byte, fileMapSize)
 	_, err := sdk.r.ReadAt(rbuf, 0)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	ioutil.WriteFile(fileName, rbuf, 0644)
+
+	f, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.Write(rbuf)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ExportTo exports current session yaml data to a file
-func (sdk *IRSDK) ExportSessionTo(fileName string) {
+func (sdk *IRSDK) ExportSessionTo(fileName string) error {
 	y := strings.Join(sdk.s, "\n")
-	ioutil.WriteFile(fileName, []byte(y), 0644)
+
+	f, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.Write([]byte(y))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (sdk *IRSDK) BroadcastMsg(msg Msg) {
