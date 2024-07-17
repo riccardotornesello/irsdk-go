@@ -97,8 +97,24 @@ type Session struct {
 			SessionSubType          interface{} `yaml:"SessionSubType"`
 			SessionSkipped          int         `yaml:"SessionSkipped"`
 			SessionRunGroupsUsed    int         `yaml:"SessionRunGroupsUsed"`
-			ResultsPositions        interface{} `yaml:"ResultsPositions"`
-			ResultsFastestLap       []struct {
+			ResultsPositions        []struct {
+				Position          int     `yaml:"Position"`
+				ClassPosition     int     `yaml:"ClassPosition"`
+				CarIdx            int     `yaml:"CarIdx"`
+				Lap               int     `yaml:"Lap"`
+				Time              float64 `yaml:"Time"`
+				FastestLap        int     `yaml:"FastestLap"`
+				FastestTime       float64 `yaml:"FastestTime"`
+				LastTime          float64 `yaml:"LastTime"`
+				LapsLed           int     `yaml:"LapsLed"`
+				LapsComplete      int     `yaml:"LapsComplete"`
+				JokerLapsComplete int     `yaml:"JokerLapsComplete"`
+				LapsDriven        float64 `yaml:"LapsDriven"`
+				Incidents         int     `yaml:"Incidents"`
+				ReasonOutId       int     `yaml:"ReasonOutId"`
+				ReasonOutStr      string  `yaml:"ReasonOutStr"`
+			} `yaml:"ResultsPositions"`
+			ResultsFastestLap []struct {
 				CarIdx      int `yaml:"CarIdx"`
 				FastestLap  int `yaml:"FastestLap"`
 				FastestTime int `yaml:"FastestTime"`
