@@ -1,45 +1,55 @@
 package winevents
 
-/*
-#include <windows.h>
-
-HANDLE _OpenEvent(CHAR *event_name) {
-	return OpenEvent(SYNCHRONIZE, FALSE, event_name);
-}
-
-DWORD _WaitForSingleObject(HANDLE h, DWORD timeout) {
-	return WaitForSingleObject(h,timeout);
-}
-
-void _SendNotifyMessage(UINT msgID, int msg, int var1, int var2, int var3) {
- 	SendNotifyMessage(HWND_BROADCAST, msgID, MAKELONG(msg, var1), MAKELONG(var2, var3));
-}
-*/
-import "C"
 import (
 	"log"
 	"time"
+	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
-var eventHandle C.HANDLE
+const HWND_BROADCAST = 0xffff
 
-func OpenEvent(eventName string) {
-	evt := (*C.CHAR)(C.CString(eventName))
-	eventHandle = C._OpenEvent(evt)
+var (
+	moduser32                 = windows.NewLazySystemDLL("user32.dll")
+	procSendNotifyMessage     = moduser32.NewProc("SendNotifyMessageW")
+	procRegisterWindowMessage = moduser32.NewProc("RegisterWindowMessageW")
+)
+
+var eventHandle windows.Handle
+
+func MAKELONG(a, b uint16) uint32 {
+	return uint32(a) | (uint32(b) << 16)
+}
+
+func OpenEvent(eventName string) error {
+	evtName, err := windows.UTF16PtrFromString(eventName)
+	if err != nil {
+		return err
+	}
+
+	eventHandle, err = windows.OpenEvent(windows.SYNCHRONIZE, false, evtName)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func WaitForSingleObject(timeout time.Duration) bool {
 	t0 := time.Now().UnixNano()
-	timeoutInt := int(timeout / time.Millisecond)
-	r := C._WaitForSingleObject(eventHandle, C.DWORD(timeoutInt))
-	if C.GetLastError() != 0 {
-		remainingTimeout := timeoutInt - int((time.Now().UnixNano()-t0)/1000000)
+	timeoutInt := uint32(timeout / time.Millisecond)
+	r, err := windows.WaitForSingleObject(eventHandle, timeoutInt)
+	if err != nil {
+		return false
+	}
+	if r != windows.WAIT_OBJECT_0 {
+		remainingTimeout := timeoutInt - uint32((time.Now().UnixNano()-t0)/1000000)
 		if remainingTimeout > 0 {
 			time.Sleep(time.Duration(remainingTimeout) * time.Millisecond)
 		}
 		return false
 	}
-	return r == 0
+	return true
 }
 
 func BroadcastMsg(msgName string, msg int, p1 int, p2 interface{}, p3 int) bool {
@@ -52,11 +62,21 @@ func BroadcastMsg(msgName string, msg int, p1 int, p2 interface{}, p3 int) bool 
 	default:
 		log.Fatal("Second param must be an int or a float")
 	}
-	msgNameChar := (*C.CHAR)(C.CString(msgName))
-	msgID := C.RegisterWindowMessage(msgNameChar)
-	if msgID < 0 {
+	msgNameUTF16, err := windows.UTF16PtrFromString(msgName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	msgID, _, _ := procRegisterWindowMessage.Call(uintptr(unsafe.Pointer(msgNameUTF16)))
+	if msgID == 0 {
 		return false
 	}
-	C._SendNotifyMessage(msgID, C.int(msg), C.int(p1), C.int(p2Int), C.int(p3))
-	return true
+
+	ret, _, _ := procSendNotifyMessage.Call(
+		uintptr(HWND_BROADCAST),
+		msgID,
+		uintptr(MAKELONG(uint16(msg), uint16(p1))),
+		uintptr(MAKELONG(uint16(p2Int), uint16(p3))),
+	)
+	return ret != 0
 }
