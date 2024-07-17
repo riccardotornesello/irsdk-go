@@ -101,65 +101,65 @@ func readVariableHeaders(r reader, h *header) *TelemetryVars {
 
 func readVariableValues(sdk *IRSDK) bool {
 	newData := false
-	if sessionStatusOK(sdk.h.status) {
+	if sessionStatusOK(sdk.header.status) {
 		// find latest buffer for variables
-		vb := findLatestBuffer(sdk.r, sdk.h)
-		sdk.tVars.mux.Lock()
-		if sdk.tVars.lastVersion < vb.tickCount {
+		vb := findLatestBuffer(sdk.reader, sdk.header)
+		sdk.telemetry.mux.Lock()
+		if sdk.telemetry.lastVersion < vb.tickCount {
 			newData = true
-			sdk.tVars.lastVersion = vb.tickCount
+			sdk.telemetry.lastVersion = vb.tickCount
 			sdk.lastValidData = time.Now().Unix()
-			for varName, v := range sdk.tVars.vars {
+			for varName, v := range sdk.telemetry.vars {
 				var rbuf []byte
 				switch v.varType {
 				case 0:
 					rbuf = make([]byte, 1)
-					_, err := sdk.r.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
+					_, err := sdk.reader.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
 					if err != nil {
 						log.Fatal(err)
 					}
 					v.Value = string(rbuf[0])
 				case 1:
 					rbuf = make([]byte, 1)
-					_, err := sdk.r.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
+					_, err := sdk.reader.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
 					if err != nil {
 						log.Fatal(err)
 					}
 					v.Value = int(rbuf[0]) > 0
 				case 2:
 					rbuf = make([]byte, 4)
-					_, err := sdk.r.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
+					_, err := sdk.reader.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
 					if err != nil {
 						log.Fatal(err)
 					}
 					v.Value = byte4ToInt(rbuf)
 				case 3:
 					rbuf = make([]byte, 4)
-					_, err := sdk.r.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
+					_, err := sdk.reader.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
 					if err != nil {
 						log.Fatal(err)
 					}
 					v.Value = byte4toBitField(rbuf)
 				case 4:
 					rbuf = make([]byte, 4)
-					_, err := sdk.r.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
+					_, err := sdk.reader.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
 					if err != nil {
 						log.Fatal(err)
 					}
 					v.Value = byte4ToFloat(rbuf)
 				case 5:
 					rbuf = make([]byte, 8)
-					_, err := sdk.r.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
+					_, err := sdk.reader.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
 					if err != nil {
 						log.Fatal(err)
 					}
 					v.Value = byte8ToFloat(rbuf)
 				}
 				v.rawBytes = rbuf
-				sdk.tVars.vars[varName] = v
+				sdk.telemetry.vars[varName] = v
 			}
 		}
-		sdk.tVars.mux.Unlock()
+		sdk.telemetry.mux.Unlock()
 	}
 
 	return newData
