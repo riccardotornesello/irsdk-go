@@ -17,7 +17,7 @@ import (
 type IRSDK struct {
 	reader        reader
 	header        *header
-	session       Session
+	session       *session
 	rawSession    []string
 	telemetry     *TelemetryVars
 	lastValidData int64
@@ -46,8 +46,8 @@ func (sdk *IRSDK) GetVar(name string) (variable, error) {
 	return variable{}, fmt.Errorf("Telemetry variable %q not found", name)
 }
 
-func (sdk *IRSDK) GetSession() Session {
-	return sdk.session
+func (sdk *IRSDK) GetSession() session {
+	return *sdk.session
 }
 
 func (sdk *IRSDK) GetLastVersion() int {
@@ -154,10 +154,12 @@ func initIRSDK(sdk *IRSDK) {
 	}
 	if sessionStatusOK(h.status) {
 		sRaw := readSessionData(sdk.reader, &h)
-		err := yaml.Unmarshal([]byte(sRaw), &sdk.session)
+		newSession := session{}
+		err := yaml.Unmarshal([]byte(sRaw), &newSession)
 		if err != nil {
 			log.Fatal(err)
 		}
+		sdk.session = &newSession
 		sdk.rawSession = strings.Split(sRaw, "\n")
 		sdk.telemetry = readVariableHeaders(sdk.reader, &h)
 		readVariableValues(sdk)
