@@ -19,7 +19,7 @@ type IRSDK struct {
 	header        *header
 	session       *session
 	rawSession    []string
-	telemetry     *telemetryVars
+	telemetry     map[string]telemetryVariable
 	lastValidData int64
 }
 
@@ -28,7 +28,8 @@ func (sdk *IRSDK) WaitForData(timeout time.Duration) bool {
 		initIRSDK(sdk)
 	}
 	if winevents.WaitForSingleObject(timeout) {
-		return readVariableValues(sdk)
+		sdk.RefreshTelemetry()
+		return true
 	}
 	return false
 }
@@ -37,27 +38,16 @@ func (sdk *IRSDK) GetVar(name string) (telemetryVariable, error) {
 	if !sessionStatusOK(sdk.header.status) {
 		return telemetryVariable{}, fmt.Errorf("Session is not active")
 	}
-	sdk.telemetry.mux.Lock()
-	if v, ok := sdk.telemetry.vars[name]; ok {
-		sdk.telemetry.mux.Unlock()
+
+	if v, ok := sdk.telemetry[name]; ok {
 		return v, nil
 	}
-	sdk.telemetry.mux.Unlock()
+
 	return telemetryVariable{}, fmt.Errorf("Telemetry variable %q not found", name)
 }
 
 func (sdk *IRSDK) GetSession() session {
 	return *sdk.session
-}
-
-func (sdk *IRSDK) GetLastVersion() int {
-	if !sessionStatusOK(sdk.header.status) {
-		return -1
-	}
-	sdk.telemetry.mux.Lock()
-	last := sdk.telemetry.lastVersion
-	sdk.telemetry.mux.Unlock()
-	return last
 }
 
 func (sdk *IRSDK) GetSessionData(path string) (string, error) {
@@ -129,6 +119,40 @@ func (sdk *IRSDK) Close() {
 	sdk.reader.Close()
 }
 
+func (sdk *IRSDK) RefreshHeader() {
+	sdk.header = readHeader(sdk.reader)
+}
+
+func (sdk *IRSDK) RefreshSession() {
+	sRaw := readSessionData(sdk.reader, sdk.header)
+
+	newSession := session{}
+	err := yaml.Unmarshal([]byte(sRaw), &newSession)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sdk.session = &newSession
+	sdk.rawSession = strings.Split(sRaw, "\n")
+}
+
+func (sdk *IRSDK) RefreshTelemetry() {
+	telemetry := readVariableHeaders(sdk.reader, sdk.header)
+	lastValidData := readVariableValues(sdk.header, sdk.reader, telemetry)
+
+	sdk.telemetry = telemetry
+	sdk.lastValidData = lastValidData
+}
+
+func (sdk *IRSDK) Refresh() {
+	sdk.RefreshHeader()
+
+	if sessionStatusOK(sdk.header.status) {
+		sdk.RefreshSession()
+		sdk.RefreshTelemetry()
+	}
+}
+
 // Init creates a SDK instance to operate with
 func Init(r reader) IRSDK {
 	if r == nil {
@@ -146,23 +170,16 @@ func Init(r reader) IRSDK {
 }
 
 func initIRSDK(sdk *IRSDK) {
-	h := readHeader(sdk.reader)
-	sdk.header = &h
+	sdk.RefreshHeader()
+
 	sdk.rawSession = nil
 	if sdk.telemetry != nil {
-		sdk.telemetry.vars = nil
+		sdk.telemetry = nil
 	}
-	if sessionStatusOK(h.status) {
-		sRaw := readSessionData(sdk.reader, &h)
-		newSession := session{}
-		err := yaml.Unmarshal([]byte(sRaw), &newSession)
-		if err != nil {
-			log.Fatal(err)
-		}
-		sdk.session = &newSession
-		sdk.rawSession = strings.Split(sRaw, "\n")
-		sdk.telemetry = readVariableHeaders(sdk.reader, &h)
-		readVariableValues(sdk)
+
+	if sessionStatusOK(sdk.header.status) {
+		sdk.RefreshSession()
+		sdk.RefreshTelemetry()
 	}
 }
 

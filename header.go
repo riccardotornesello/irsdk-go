@@ -22,13 +22,13 @@ type header struct {
 	bufLen int // length in bytes for one line
 }
 
-func readHeader(r reader) header {
+func readHeader(r reader) *header {
 	rbuf := make([]byte, 48)
 	_, err := r.ReadAt(rbuf, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
-	h := header{
+	return &header{
 		byte4ToInt(rbuf[0:4]),
 		byte4ToInt(rbuf[4:8]),
 		byte4ToInt(rbuf[8:12]),
@@ -40,6 +40,4 @@ func readHeader(r reader) header {
 		byte4ToInt(rbuf[32:36]),
 		byte4ToInt(rbuf[36:40]),
 	}
-	//fmt.Printf("%v\n%+v\n", rbuf, h)
-	return h
 }
