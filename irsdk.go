@@ -28,8 +28,7 @@ func (sdk *IRSDK) WaitForData(timeout time.Duration) bool {
 		initIRSDK(sdk)
 	}
 	if winevents.WaitForSingleObject(timeout) {
-		sdk.RefreshTelemetry()
-		return true
+		return readVariableValues(sdk.header, sdk.reader, sdk.telemetry) > sdk.lastValidData
 	}
 	return false
 }
@@ -47,7 +46,17 @@ func (sdk *IRSDK) GetVar(name string) (telemetryVariable, error) {
 }
 
 func (sdk *IRSDK) GetSession() session {
+	if sdk.session == nil {
+		return session{}
+	}
 	return *sdk.session
+}
+
+func (sdk *IRSDK) GetTelemetry() map[string]telemetryVariable {
+	if sdk.telemetry == nil {
+		return make(map[string]telemetryVariable)
+	}
+	return sdk.telemetry
 }
 
 func (sdk *IRSDK) GetSessionData(path string) (string, error) {
@@ -167,6 +176,18 @@ func Init(r reader) IRSDK {
 	winevents.OpenEvent(dataValidEventName)
 	initIRSDK(&sdk)
 	return sdk
+}
+
+func FloatToTime(f float32) time.Duration {
+	return time.Duration(f * float32(time.Second))
+}
+
+func TimeToStr(t time.Duration) string {
+	return fmt.Sprintf("%d:%02d.%03d", int(t.Minutes()), int(t.Seconds())%60, int(t.Milliseconds())%1000)
+}
+
+func FloatToTimeStr(f float32) string {
+	return TimeToStr(FloatToTime(f))
 }
 
 func initIRSDK(sdk *IRSDK) {
