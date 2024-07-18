@@ -19,7 +19,7 @@ type IRSDK struct {
 	header        *header
 	session       *session
 	rawSession    []string
-	telemetry     *TelemetryVars
+	telemetry     *telemetryVars
 	lastValidData int64
 }
 
@@ -33,9 +33,9 @@ func (sdk *IRSDK) WaitForData(timeout time.Duration) bool {
 	return false
 }
 
-func (sdk *IRSDK) GetVar(name string) (variable, error) {
+func (sdk *IRSDK) GetVar(name string) (telemetryVariable, error) {
 	if !sessionStatusOK(sdk.header.status) {
-		return variable{}, fmt.Errorf("Session is not active")
+		return telemetryVariable{}, fmt.Errorf("Session is not active")
 	}
 	sdk.telemetry.mux.Lock()
 	if v, ok := sdk.telemetry.vars[name]; ok {
@@ -43,7 +43,7 @@ func (sdk *IRSDK) GetVar(name string) (variable, error) {
 		return v, nil
 	}
 	sdk.telemetry.mux.Unlock()
-	return variable{}, fmt.Errorf("Telemetry variable %q not found", name)
+	return telemetryVariable{}, fmt.Errorf("Telemetry variable %q not found", name)
 }
 
 func (sdk *IRSDK) GetSession() session {
