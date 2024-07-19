@@ -29,15 +29,15 @@ func readHeader(r reader) *header {
 		log.Fatal(err)
 	}
 	return &header{
-		byte4ToInt(rbuf[0:4]),
-		byte4ToInt(rbuf[4:8]),
-		byte4ToInt(rbuf[8:12]),
-		byte4ToInt(rbuf[12:16]),
-		byte4ToInt(rbuf[16:20]),
-		byte4ToInt(rbuf[20:24]),
-		byte4ToInt(rbuf[24:28]),
-		byte4ToInt(rbuf[28:32]),
-		byte4ToInt(rbuf[32:36]),
-		byte4ToInt(rbuf[36:40]),
+		Byte4ToInt(rbuf[0:4]),
+		Byte4ToInt(rbuf[4:8]),
+		Byte4ToInt(rbuf[8:12]),
+		Byte4ToInt(rbuf[12:16]),
+		Byte4ToInt(rbuf[16:20]),
+		Byte4ToInt(rbuf[20:24]),
+		Byte4ToInt(rbuf[24:28]),
+		Byte4ToInt(rbuf[28:32]),
+		Byte4ToInt(rbuf[32:36]),
+		Byte4ToInt(rbuf[36:40]),
 	}
 }

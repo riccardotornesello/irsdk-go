@@ -51,8 +51,8 @@ func findLatestBuffer(r reader, h *header) varBuffer {
 			log.Fatal(err)
 		}
 		currentVb := varBuffer{
-			byte4ToInt(rbuf[0:4]),
-			byte4ToInt(rbuf[4:8]),
+			Byte4ToInt(rbuf[0:4]),
+			Byte4ToInt(rbuf[4:8]),
 		}
 		if foundTickCount < currentVb.tickCount {
 			foundTickCount = currentVb.tickCount
@@ -71,13 +71,13 @@ func readVariableHeaders(r reader, h *header) map[string]telemetryVariable {
 			log.Fatal(err)
 		}
 		v := telemetryVariable{
-			byte4ToInt(rbuf[0:4]),
-			byte4ToInt(rbuf[4:8]),
-			byte4ToInt(rbuf[8:12]),
+			Byte4ToInt(rbuf[0:4]),
+			Byte4ToInt(rbuf[4:8]),
+			Byte4ToInt(rbuf[8:12]),
 			int(rbuf[12]) > 0,
-			bytesToString(rbuf[16:48]),
-			bytesToString(rbuf[48:112]),
-			bytesToString(rbuf[112:144]),
+			BytesToString(rbuf[16:48]),
+			BytesToString(rbuf[48:112]),
+			BytesToString(rbuf[112:144]),
 			nil,
 			nil,
 		}
@@ -108,10 +108,10 @@ func readVariableValues(header *header, reader reader, telemetry map[string]tele
 			if v.Count > 1 {
 				v.Value = make([]string, v.Count)
 				for i := 0; i < v.Count; i++ {
-					v.Value.([]string)[i] = bytesToString(rbuf[i*1 : i*1+1])
+					v.Value.([]string)[i] = BytesToString(rbuf[i*1 : i*1+1])
 				}
 			} else {
-				v.Value = bytesToString(rbuf)
+				v.Value = BytesToString(rbuf)
 			}
 		case irsdkVarTypeBool:
 			if v.Count > 1 {
@@ -126,37 +126,37 @@ func readVariableValues(header *header, reader reader, telemetry map[string]tele
 			if v.Count > 1 {
 				v.Value = make([]int, v.Count)
 				for i := 0; i < v.Count; i++ {
-					v.Value.([]int)[i] = byte4ToInt(rbuf[i*4 : i*4+4])
+					v.Value.([]int)[i] = Byte4ToInt(rbuf[i*4 : i*4+4])
 				}
 			} else {
-				v.Value = byte4ToInt(rbuf)
+				v.Value = Byte4ToInt(rbuf)
 			}
 		case irsdkVarTypeBitField:
 			if v.Count > 1 {
 				v.Value = make([]string, v.Count)
 				for i := 0; i < v.Count; i++ {
-					v.Value.([]string)[i] = byte4toBitField(rbuf[i*4 : i*4+4])
+					v.Value.([]string)[i] = Byte4toBitField(rbuf[i*4 : i*4+4])
 				}
 			} else {
-				v.Value = byte4toBitField(rbuf)
+				v.Value = Byte4toBitField(rbuf)
 			}
 		case irsdkVarTypeFloat:
 			if v.Count > 1 {
 				v.Value = make([]float32, v.Count)
 				for i := 0; i < v.Count; i++ {
-					v.Value.([]float32)[i] = byte4ToFloat(rbuf[i*4 : i*4+4])
+					v.Value.([]float32)[i] = Byte4ToFloat(rbuf[i*4 : i*4+4])
 				}
 			} else {
-				v.Value = byte4ToFloat(rbuf)
+				v.Value = Byte4ToFloat(rbuf)
 			}
 		case irsdkVarTypeDouble:
 			if v.Count > 1 {
 				v.Value = make([]float64, v.Count)
 				for i := 0; i < v.Count; i++ {
-					v.Value.([]float64)[i] = byte8ToFloat(rbuf[i*8 : i*8+8])
+					v.Value.([]float64)[i] = Byte8ToFloat(rbuf[i*8 : i*8+8])
 				}
 			} else {
-				v.Value = byte8ToFloat(rbuf)
+				v.Value = Byte8ToFloat(rbuf)
 			}
 		default:
 			log.Fatal(fmt.Sprintf("Unknown variable type: %d", v.VarType))

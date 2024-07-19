@@ -178,18 +178,6 @@ func Init(r reader) IRSDK {
 	return sdk
 }
 
-func FloatToTime(f float32) time.Duration {
-	return time.Duration(f * float32(time.Second))
-}
-
-func TimeToStr(t time.Duration) string {
-	return fmt.Sprintf("%d:%02d.%03d", int(t.Minutes()), int(t.Seconds())%60, int(t.Milliseconds())%1000)
-}
-
-func FloatToTimeStr(f float32) string {
-	return TimeToStr(FloatToTime(f))
-}
-
 func initIRSDK(sdk *IRSDK) {
 	sdk.RefreshHeader()
 
