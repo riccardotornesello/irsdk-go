@@ -21,7 +21,7 @@ type IRSDK struct {
 
 	Header    *header
 	Telemetry map[string]telemetryVar
-	Session   *session
+	Session   *Session
 }
 
 func Init(r reader) *IRSDK {

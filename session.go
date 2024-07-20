@@ -8,17 +8,17 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type session struct {
-	WeekendInfo   weekendInfo   `yaml:"WeekendInfo"`
-	SessionInfo   sessionInfo   `yaml:"SessionInfo"`
-	CameraInfo    cameraInfo    `yaml:"CameraInfo"`
-	RadioInfo     radioInfo     `yaml:"RadioInfo"`
-	DriverInfo    driverInfo    `yaml:"DriverInfo"`
-	SplitTimeInfo splitTimeInfo `yaml:"SplitTimeInfo"`
-	CarSetup      carSetup      `yaml:"CarSetup"`
+type Session struct {
+	WeekendInfo   WeekendInfo   `yaml:"WeekendInfo"`
+	SessionInfo   SessionInfo   `yaml:"SessionInfo"`
+	CameraInfo    CameraInfo    `yaml:"CameraInfo"`
+	RadioInfo     RadioInfo     `yaml:"RadioInfo"`
+	DriverInfo    DriverInfo    `yaml:"DriverInfo"`
+	SplitTimeInfo SplitTimeInfo `yaml:"SplitTimeInfo"`
+	CarSetup      CarSetup      `yaml:"CarSetup"`
 }
 
-type weekendInfo struct {
+type WeekendInfo struct {
 	TrackName              string           `yaml:"TrackName"`
 	TrackID                int              `yaml:"TrackID"`
 	TrackLength            string           `yaml:"TrackLength"`
@@ -68,24 +68,24 @@ type weekendInfo struct {
 	BuildType              string           `yaml:"BuildType"`
 	BuildTarget            string           `yaml:"BuildTarget"`
 	BuildVersion           string           `yaml:"BuildVersion"`
-	WeekendOptions         weekendOptions   `yaml:"WeekendOptions"`
-	TelemetryOptions       telemetryOptions `yaml:"TelemetryOptions"`
+	WeekendOptions         WeekendOptions   `yaml:"WeekendOptions"`
+	TelemetryOptions       TelemetryOptions `yaml:"TelemetryOptions"`
 }
 
-type sessionInfo struct {
-	Sessions []sessionDetails `yaml:"Sessions"`
+type SessionInfo struct {
+	Sessions []SessionDetails `yaml:"Sessions"`
 }
 
-type cameraInfo struct {
-	Groups []cameraGroup `yaml:"Groups"`
+type CameraInfo struct {
+	Groups []CameraGroup `yaml:"Groups"`
 }
 
-type radioInfo struct {
+type RadioInfo struct {
 	SelectedRadioNum int     `yaml:"SelectedRadioNum"`
-	Radios           []radio `yaml:"Radios"`
+	Radios           []Radio `yaml:"Radios"`
 }
 
-type driverInfo struct {
+type DriverInfo struct {
 	DriverCarIdx              int      `yaml:"DriverCarIdx"`
 	DriverUserID              int      `yaml:"DriverUserID"`
 	PaceCarIdx                int      `yaml:"PaceCarIdx"`
@@ -113,33 +113,33 @@ type driverInfo struct {
 	DriverSetupLoadTypeName   string   `yaml:"DriverSetupLoadTypeName"`
 	DriverSetupPassedTech     int      `yaml:"DriverSetupPassedTech"`
 	DriverIncidentCount       int      `yaml:"DriverIncidentCount"`
-	Drivers                   []driver `yaml:"Drivers"`
+	Drivers                   []Driver `yaml:"Drivers"`
 }
 
-type splitTimeInfo struct {
-	Sectors []sector `yaml:"Sectors"`
+type SplitTimeInfo struct {
+	Sectors []Sector `yaml:"Sectors"`
 }
 
-type carSetup struct {
+type CarSetup struct {
 	UpdateCount int `yaml:"UpdateCount"`
 	TiresAero   struct {
-		LeftFront  leftTire  `yaml:"LeftFront"`
-		LeftRear   leftTire  `yaml:"LeftRear"`
-		RightFront rightTire `yaml:"RightFront"`
-		RightRear  rightTire `yaml:"RightRear"`
+		LeftFront  LeftTire  `yaml:"LeftFront"`
+		LeftRear   LeftTire  `yaml:"LeftRear"`
+		RightFront RightTire `yaml:"RightFront"`
+		RightRear  RightTire `yaml:"RightRear"`
 	} `yaml:"TiresAero"`
 	Chassis struct {
-		Front      frontChassis     `yaml:"Front"`
-		LeftFront  sideFrontChassis `yaml:"LeftFront"`
-		LeftRear   sideRearChassis  `yaml:"LeftRear"`
-		InCarDials inCarSettings    `yaml:"InCarDials"`
-		RightFront sideFrontChassis `yaml:"RightFront"`
-		RightRear  sideRearChassis  `yaml:"RightRear"`
-		Rear       rearChassis      `yaml:"Rear"`
+		Front      FrontChassis     `yaml:"Front"`
+		LeftFront  SideFrontChassis `yaml:"LeftFront"`
+		LeftRear   SideRearChassis  `yaml:"LeftRear"`
+		InCarDials InCarSettings    `yaml:"InCarDials"`
+		RightFront SideFrontChassis `yaml:"RightFront"`
+		RightRear  SideRearChassis  `yaml:"RightRear"`
+		Rear       RearChassis      `yaml:"Rear"`
 	} `yaml:"Chassis"`
 }
 
-type driver struct {
+type Driver struct {
 	CarIdx                  int     `yaml:"CarIdx"`
 	UserName                string  `yaml:"UserName"`
 	AbbrevName              string  `yaml:"AbbrevName"`
@@ -181,7 +181,7 @@ type driver struct {
 	TeamIncidentCount       int     `yaml:"TeamIncidentCount"`
 }
 
-type weekendOptions struct {
+type WeekendOptions struct {
 	NumStarters                int    `yaml:"NumStarters"`
 	StartingGrid               string `yaml:"StartingGrid"`
 	QualifyScoring             string `yaml:"QualifyScoring"`
@@ -212,11 +212,11 @@ type weekendOptions struct {
 	GreenWhiteCheckeredLimit   int    `yaml:"GreenWhiteCheckeredLimit"`
 }
 
-type telemetryOptions struct {
+type TelemetryOptions struct {
 	TelemetryDiskFile string `yaml:"TelemetryDiskFile"`
 }
 
-type sessionDetails struct {
+type SessionDetails struct {
 	SessionNum              int                 `yaml:"SessionNum"`
 	SessionLaps             string              `yaml:"SessionLaps"`
 	SessionTime             string              `yaml:"SessionTime"`
@@ -227,8 +227,8 @@ type sessionDetails struct {
 	SessionSubType          interface{}         `yaml:"SessionSubType"`
 	SessionSkipped          int                 `yaml:"SessionSkipped"`
 	SessionRunGroupsUsed    int                 `yaml:"SessionRunGroupsUsed"`
-	ResultsPositions        []resultsPosition   `yaml:"ResultsPositions"`
-	ResultsFastestLap       []resultsFastestLap `yaml:"ResultsFastestLap"`
+	ResultsPositions        []ResultsPosition   `yaml:"ResultsPositions"`
+	ResultsFastestLap       []ResultsFastestLap `yaml:"ResultsFastestLap"`
 	ResultsAverageLapTime   int                 `yaml:"ResultsAverageLapTime"`
 	ResultsNumCautionFlags  int                 `yaml:"ResultsNumCautionFlags"`
 	ResultsNumCautionLaps   int                 `yaml:"ResultsNumCautionLaps"`
@@ -237,13 +237,13 @@ type sessionDetails struct {
 	ResultsOfficial         int                 `yaml:"ResultsOfficial"`
 }
 
-type resultsFastestLap struct {
+type ResultsFastestLap struct {
 	CarIdx      int `yaml:"CarIdx"`
 	FastestLap  int `yaml:"FastestLap"`
 	FastestTime int `yaml:"FastestTime"`
 }
 
-type resultsPosition struct {
+type ResultsPosition struct {
 	Position          int     `yaml:"Position"`
 	ClassPosition     int     `yaml:"ClassPosition"`
 	CarIdx            int     `yaml:"CarIdx"`
@@ -261,16 +261,16 @@ type resultsPosition struct {
 	ReasonOutStr      string  `yaml:"ReasonOutStr"`
 }
 
-type radio struct {
+type Radio struct {
 	RadioNum            int         `yaml:"RadioNum"`
 	HopCount            int         `yaml:"HopCount"`
 	NumFrequencies      int         `yaml:"NumFrequencies"`
 	TunedToFrequencyNum int         `yaml:"TunedToFrequencyNum"`
 	ScanningIsOn        int         `yaml:"ScanningIsOn"`
-	Frequencies         []frequency `yaml:"Frequencies"`
+	Frequencies         []Frequency `yaml:"Frequencies"`
 }
 
-type frequency struct {
+type Frequency struct {
 	FrequencyNum  int    `yaml:"FrequencyNum"`
 	FrequencyName string `yaml:"FrequencyName"`
 	Priority      int    `yaml:"Priority"`
@@ -284,45 +284,45 @@ type frequency struct {
 	IsDeletable   int    `yaml:"IsDeletable"`
 }
 
-type camera struct {
+type Camera struct {
 	CameraNum  int    `yaml:"CameraNum"`
 	CameraName string `yaml:"CameraName"`
 }
 
-type sector struct {
+type Sector struct {
 	SectorNum      int     `yaml:"SectorNum"`
 	SectorStartPct float64 `yaml:"SectorStartPct"`
 }
 
-type cameraGroup struct {
+type CameraGroup struct {
 	GroupNum  int      `yaml:"GroupNum"`
 	GroupName string   `yaml:"GroupName"`
-	Cameras   []camera `yaml:"Cameras"`
+	Cameras   []Camera `yaml:"Cameras"`
 	IsScenic  bool     `yaml:"IsScenic,omitempty"`
 }
 
-type leftTire struct {
+type LeftTire struct {
 	StartingPressure string `yaml:"StartingPressure"`
 	LastHotPressure  string `yaml:"LastHotPressure"`
 	LastTempsOMI     string `yaml:"LastTempsOMI"`
 	TreadRemaining   string `yaml:"TreadRemaining"`
 }
 
-type rightTire struct {
+type RightTire struct {
 	StartingPressure string `yaml:"StartingPressure"`
 	LastHotPressure  string `yaml:"LastHotPressure"`
 	LastTempsIMO     string `yaml:"LastTempsIMO"`
 	TreadRemaining   string `yaml:"TreadRemaining"`
 }
 
-type sideFrontChassis struct {
+type SideFrontChassis struct {
 	CornerWeight      string `yaml:"CornerWeight"`
 	RideHeight        string `yaml:"RideHeight"`
 	SpringPerchOffset string `yaml:"SpringPerchOffset"`
 	Camber            string `yaml:"Camber"`
 }
 
-type sideRearChassis struct {
+type SideRearChassis struct {
 	CornerWeight      string `yaml:"CornerWeight"`
 	RideHeight        string `yaml:"RideHeight"`
 	SpringPerchOffset string `yaml:"SpringPerchOffset"`
@@ -330,19 +330,19 @@ type sideRearChassis struct {
 	ToeIn             string `yaml:"ToeIn"`
 }
 
-type frontChassis struct {
+type FrontChassis struct {
 	ArbSetting  int    `yaml:"ArbSetting"`
 	ToeIn       string `yaml:"ToeIn"`
 	FuelLevel   string `yaml:"FuelLevel"`
 	CrossWeight string `yaml:"CrossWeight"`
 }
 
-type rearChassis struct {
+type RearChassis struct {
 	ArbSetting  int `yaml:"ArbSetting"`
 	WingSetting int `yaml:"WingSetting"`
 }
 
-type inCarSettings struct {
+type InCarSettings struct {
 	DisplayPage       string `yaml:"DisplayPage"`
 	BrakePressureBias string `yaml:"BrakePressureBias"`
 }
@@ -370,7 +370,7 @@ func readSessionData(sdk *IRSDK) string {
 func updateSessionData(sdk *IRSDK) {
 	sRaw := readSessionData(sdk)
 
-	newSession := session{}
+	newSession := Session{}
 	err := yaml.Unmarshal([]byte(sRaw), &newSession)
 	if err != nil {
 		log.Fatal(err)
