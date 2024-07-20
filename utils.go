@@ -30,8 +30,16 @@ func BytesToString(in []byte) string {
 	return strings.TrimRight(string(in), "\x00")
 }
 
+func Byte8ToTimeStr(in []byte) string {
+	return DoubleToTimeStr(Byte8ToFloat(in))
+}
+
 func FloatToTime(f float32) time.Duration {
 	return time.Duration(f * float32(time.Second))
+}
+
+func DoubleToTime(f float64) time.Duration {
+	return time.Duration(f * float64(time.Second))
 }
 
 func TimeToStr(t time.Duration) string {
@@ -40,4 +48,8 @@ func TimeToStr(t time.Duration) string {
 
 func FloatToTimeStr(f float32) string {
 	return TimeToStr(FloatToTime(f))
+}
+
+func DoubleToTimeStr(f float64) string {
+	return TimeToStr(DoubleToTime(f))
 }

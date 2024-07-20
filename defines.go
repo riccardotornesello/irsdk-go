@@ -1,121 +1,330 @@
 package irsdk
 
-import "io"
-
-const dataValidEventName string = "Local\\IRSDKDataValidEvent"
-const fileMapName string = "Local\\IRSDKMemMapFileName"
-const fileMapSize int32 = 1164 * 1024
-const broadcastMsgName string = "IRSDK_BROADCASTMSG"
-const connTimeout = 30
-
 const (
-	stConnected int = 1
+	DataValidEventName = "Local\\IRSDKDataValidEvent"
+	MemMapFile         = "Local\\IRSDKMemMapFileName"
+	BroadcastMsgName   = "BROADCASTMSG"
+	MemMapSize         = 1164 * 1024
+	MaxBufs            = 4
+	MaxString          = 32
+	MaxDesc            = 64
+	UnlimitedLaps      = 32767
+	UnlimitedTime      = 604800.0
+	Ver                = 2
 )
 
-type Msg struct {
-	Cmd int
-	P1  int
-	P2  interface{}
-	P3  int
+type StatusField = int
+
+const (
+	stConnected StatusField = 1
+)
+
+type TrackLocation int
+
+const (
+	LocationNotInWorld TrackLocation = iota - 1
+	LocationOffTrack
+	LocationInPitStall
+	LocationAproachingPits
+	LocationOnTrack
+)
+
+type TrackSurface int
+
+const (
+	SurfaceNotInWorld TrackSurface = iota - 1
+	SurfaceUndefinedMaterial
+	SurfaceAsphalt1Material
+	SurfaceAsphalt2Material
+	SurfaceAsphalt3Material
+	SurfaceAsphalt4Material
+	SurfaceConcrete1Material
+	SurfaceConcrete2Material
+	SurfaceRacingDirt1Material
+	SurfaceRacingDirt2Material
+	SurfacePaint1Material
+	SurfacePaint2Material
+	SurfaceRumble1Material
+	SurfaceRumble2Material
+	SurfaceRumble3Material
+	SurfaceRumble4Material
+	SurfaceGrass1Material
+	SurfaceGrass2Material
+	SurfaceGrass3Material
+	SurfaceGrass4Material
+	SurfaceDirt1Material
+	SurfaceDirt2Material
+	SurfaceDirt3Material
+	SurfaceDirt4Material
+	SurfaceSandMaterial
+	SurfaceGravel1Material
+	SurfaceGravel2Material
+	SurfaceGrasscreteMaterial
+	SurfaceAstroturfMaterial
+)
+
+type SessionState int
+
+const (
+	SessionStateInvalid SessionState = iota
+	SessionStateGetInCar
+	SessionStateWarmup
+	SessionStateParadeLaps
+	SessionStateRacing
+	SessionStateCheckered
+	SessionStateCoolDown
+)
+
+type CarLeftRight int
+
+const (
+	LROff CarLeftRight = iota
+	LRClear
+	LRCarLeft
+	LRCarRight
+	LRCarLeftRight
+	LR2CarsLeft
+	LR2CarsRight
+)
+
+type PitSvStatus int
+
+const (
+	PitSvNone PitSvStatus = iota
+	PitSvInProgress
+	PitSvComplete
+	PitSvTooFarLeft    = 100
+	PitSvTooFarRight   = 101
+	PitSvTooFarForward = 102
+	PitSvTooFarBack    = 103
+	PitSvBadAngle      = 104
+	PitSvCantFixThat   = 105
+)
+
+type PaceMode int
+
+const (
+	PaceModeSingleFileStart PaceMode = iota
+	PaceModeDoubleFileStart
+	PaceModeSingleFileRestart
+	PaceModeDoubleFileRestart
+	PaceModeNotPacing
+)
+
+type TrackWetness int
+
+const (
+	TrackWetness_UNKNOWN TrackWetness = iota
+	TrackWetness_Dry
+	TrackWetness_MostlyDry
+	TrackWetness_VeryLightlyWet
+	TrackWetness_LightlyWet
+	TrackWetness_ModeratelyWet
+	TrackWetness_VeryWet
+	TrackWetness_ExtremelyWet
+)
+
+type EngineWarnings int
+
+const (
+	waterTempWarning EngineWarnings = 1 << iota
+	fuelPressureWarning
+	oilPressureWarning
+	engineStalled
+	pitSpeedLimiter
+	revLimiterActive
+	oilTempWarning
+)
+
+type Flags int
+
+const (
+	checkered Flags = 1 << iota
+	white
+	green
+	yellow
+	red
+	blue
+	debris
+	crossed
+	yellowWaving
+	oneLapToGreen
+	greenHeld
+	tenToGo
+	fiveToGo
+	randomWaving
+	caution
+	cautionWaving
+	black
+	disqualify
+	servicible
+	furled
+	repair
+	startHidden
+	startReady
+	startSet
+	startGo
+)
+
+type CameraState int
+
+const (
+	IsSessionScreen CameraState = 1 << iota
+	IsScenicActive
+	CamToolActive
+	UIHidden
+	UseAutoShotSelection
+	UseTemporaryEdits
+	UseKeyAcceleration
+	UseKey10xAcceleration
+	UseMouseAimMode
+)
+
+type PitSvFlags int
+
+const (
+	LFTireChange PitSvFlags = 1 << iota
+	RFTireChange
+	LRTireChange
+	RRTireChange
+	FuelFill
+	WindshieldTearoff
+	FastRepair
+)
+
+type PaceFlags int
+
+const (
+	PaceFlagsEndOfLine PaceFlags = 1 << iota
+	PaceFlagsFreePass
+	PaceFlagsWavedAround
+)
+
+type DiskSubHeader struct {
+	SessionStartDate   int64
+	SessionStartTime   float64
+	SessionEndTime     float64
+	SessionLapCount    int
+	SessionRecordCount int
 }
 
-type reader interface {
-	io.Reader
-	io.ReaderAt
-	io.Closer
-}
+type BroadcastMsg int
 
 const (
-	BroadcastCamSwitchPos            int = 0  // car position, group, camera
-	BroadcastCamSwitchNum            int = 1  // driver #, group, camera
-	BroadcastCamSetState             int = 2  // irsdk_CameraState, unused, unused
-	BroadcastReplaySetPlaySpeed      int = 3  // speed, slowMotion, unused
-	BroadcastReplaySetPlayPosition   int = 4  // irsdk_RpyPosMode, Frame Number (high, low)
-	BroadcastReplaySearch            int = 5  // irsdk_RpySrchMode, unused, unused
-	BroadcastReplaySetState          int = 6  // irsdk_RpyStateMode, unused, unused
-	BroadcastReloadTextures          int = 7  // irsdk_ReloadTexturesMode, carIdx, unused
-	BroadcastChatComand              int = 8  // irsdk_ChatCommandMode, subCommand, unused
-	BroadcastPitCommand              int = 9  // irsdk_PitCommandMode, parameter
-	BroadcastTelemCommand            int = 10 // irsdk_TelemCommandMode, unused, unused
-	BroadcastFFBCommand              int = 11 // irsdk_FFBCommandMode, value (float, high, low)
-	BroadcastReplaySearchSessionTime int = 12 // sessionNum, sessionTimeMS (high, low)
-	BroadcastLast                    int = 13 // unused placeholder
+	BroadcastCamSwitchPos            BroadcastMsg = iota // car position, group, camera
+	BroadcastCamSwitchNum                                // driver #, group, camera
+	BroadcastCamSetState                                 // CameraState, unused, unused
+	BroadcastReplaySetPlaySpeed                          // speed, slowMotion, unused
+	BroadcastReplaySetPlayPosition                       // RpyPosMode, Frame Number (high, low)
+	BroadcastReplaySearch                                // RpySrchMode, unused, unused
+	BroadcastReplaySetState                              // RpyStateMode, unused, unused
+	BroadcastReloadTextures                              // ReloadTexturesMode, carIdx, unused
+	BroadcastChatComand                                  // ChatCommandMode, subCommand, unused
+	BroadcastPitCommand                                  // PitCommandMode, parameter
+	BroadcastTelemCommand                                // TelemCommandMode, unused, unused
+	BroadcastFFBCommand                                  // FFBCommandMode, value (float, high, low)
+	BroadcastReplaySearchSessionTime                     // sessionNum, sessionTimeMS (high, low)
+	BroadcastVideoCapture                                // VideoCaptureMode, unused, unused
+	BroadcastLast                                        // unused placeholder
 )
 
+type ChatCommandMode int
+
 const (
-	ChatCommandMacro     int = 0 // pass in a number from 1-15 representing the chat macro to launch
-	ChatCommandBeginChat int = 1 // Open up a new chat window
-	ChatCommandReply     int = 2 // Reply to last private chat
-	ChatCommandCancel    int = 3 // Close chat window
+	ChatCommand_Macro     ChatCommandMode = iota // pass in a number from 1-15 representing the chat macro to launch
+	ChatCommand_BeginChat                        // Open up a new chat window
+	ChatCommand_Reply                            // Reply to last private chat
+	ChatCommand_Cancel                           // Close chat window
 )
 
-// this only works when the driver is in the car
+type PitCommandMode int
+
 const (
-	PitCommandClear      int = 0  // Clear all pit checkboxes
-	PitCommandWS         int = 1  // Clean the winshield, using one tear off
-	PitCommandFuel       int = 2  // Add fuel, optionally specify the amount to add in liters or pass '0' to use existing amount
-	PitCommandLF         int = 3  // Change the left front tire, optionally specifying the pressure in KPa or pass '0' to use existing pressure
-	PitCommandRF         int = 4  // right front
-	PitCommandLR         int = 5  // left rear
-	PitCommandRR         int = 6  // right rear
-	PitCommandClearTires int = 7  // Clear tire pit checkboxes
-	PitCommandFR         int = 8  // Request a fast repair
-	PitCommandClearWS    int = 9  // Uncheck Clean the winshield checkbox
-	PitCommandClearFR    int = 10 // Uncheck request a fast repair
-	PitCommandClearFuel  int = 11 // Uncheck add fuel
+	PitCommand_Clear      PitCommandMode = iota // Clear all pit checkboxes
+	PitCommand_WS                               // Clean the winshield, using one tear off
+	PitCommand_Fuel                             // Add fuel, optionally specify the amount to add in liters or pass '0' to use existing amount
+	PitCommand_LF                               // Change the left front tire, optionally specifying the pressure in KPa or pass '0' to use existing pressure
+	PitCommand_RF                               // right front
+	PitCommand_LR                               // left rear
+	PitCommand_RR                               // right rear
+	PitCommand_ClearTires                       // Clear tire pit checkboxes
+	PitCommand_FR                               // Request a fast repair
+	PitCommand_ClearWS                          // Uncheck Clean the winshield checkbox
+	PitCommand_ClearFR                          // Uncheck request a fast repair
+	PitCommand_ClearFuel                        // Uncheck add fuel
+	PitCommand_TC                               // Change tire compound
 )
 
-// You can call this any time, but telemtry only records when driver is in there car
+type TelemCommandMode int
+
 const (
-	TelemCommandStop    int = 0 // Turn telemetry recording off
-	TelemCommandStart   int = 1 // Turn telemetry recording on
-	TelemCommandRestart int = 2 // Write current file to disk and start a new one
+	TelemCommand_Stop    TelemCommandMode = iota // Turn telemetry recording off
+	TelemCommand_Start                           // Turn telemetry recording on
+	TelemCommand_Restart                         // Write current file to disk and start a new one
 )
 
+type RpyStateMode int
+
 const (
-	RpyStateEraseTape int = 0 // clear any data in the replay tape
-	RpyStateLast      int = 1 // unused place holder
+	RpyState_EraseTape RpyStateMode = iota // clear any data in the replay tape
+	RpyState_Last                          // unused place holder
 )
 
+type ReloadTexturesMode int
+
 const (
-	ReloadTexturesAll    int = 0 // reload all textuers
-	ReloadTexturesCarIdx int = 1 // reload only textures for the specific carIdx
+	ReloadTextures_All    ReloadTexturesMode = iota // reload all textuers
+	ReloadTextures_CarIdx                           // reload only textures for the specific carIdx
 )
 
-// Search replay tape for events
+type RpySrchMode int
+
 const (
-	RpySrchToStart      int = 0
-	RpySrchToEnd        int = 1
-	RpySrchPrevSession  int = 2
-	RpySrchNextSession  int = 3
-	RpySrchPrevLap      int = 4
-	RpySrchNextLap      int = 5
-	RpySrchPrevFrame    int = 6
-	RpySrchNextFrame    int = 7
-	RpySrchPrevIncident int = 8
-	RpySrchNextIncident int = 9
-	RpySrchLast         int = 10 // unused placeholder
+	RpySrch_ToStart RpySrchMode = iota
+	RpySrch_ToEnd
+	RpySrch_PrevSession
+	RpySrch_NextSession
+	RpySrch_PrevLap
+	RpySrch_NextLap
+	RpySrch_PrevFrame
+	RpySrch_NextFrame
+	RpySrch_PrevIncident
+	RpySrch_NextIncident
+	RpySrch_Last
 )
 
+type RpyPosMode int
+
 const (
-	RpyPosBegin   int = 0
-	RpyPosCurrent int = 1
-	RpyPosEnd     int = 2
-	RpyPosLast    int = 3 // unused placeholder
+	RpyPos_Begin RpyPosMode = iota
+	RpyPos_Current
+	RpyPos_End
+	RpyPos_Last
 )
 
-// You can call this any time
+type FFBCommandMode int
+
 const (
-	FFBCommandMaxForce int = 0 // Set the maximum force when mapping steering torque force to direct input units (float in Nm)
-	FFBCommandLast     int = 1 // unused placeholder
+	FFBCommand_MaxForce FFBCommandMode = iota // Set the maximum force when mapping steering torque force to direct input units (float in Nm)
+	FFBCommand_Last                           // unused placeholder
 )
 
-// irsdk_BroadcastCamSwitchPos or irsdk_BroadcastCamSwitchNum camera focus defines
-// pass these in for the first parameter to select the 'focus at' types in the camera system.
-const (
-	csFocusAtIncident int = -3
-	csFocusAtLeader   int = -2
-	csFocusAtExiting  int = -1
-	csFocusAtDriver   int = 0 // ctFocusAtDriver + car number...
+type csMode int
 
+const (
+	csFocusAtIncident csMode = -3
+	csFocusAtLeader   csMode = -2
+	csFocusAtExiting  csMode = -1
+	csFocusAtDriver   csMode = 0
+)
+
+type VideoCaptureMode int
+
+const (
+	VideoCapture_TriggerScreenShot  VideoCaptureMode = iota // save a screenshot to disk
+	VideoCaptuer_StartVideoCapture                          // start capturing video
+	VideoCaptuer_EndVideoCapture                            // stop capturing video
+	VideoCaptuer_ToggleVideoCapture                         // toggle video capture on/off
+	VideoCaptuer_ShowVideoTimer                             // show video timer in upper left corner of display
+	VideoCaptuer_HideVideoTimer                             // hide video timer
 )

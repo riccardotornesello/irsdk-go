@@ -6,165 +6,200 @@ import (
 	"time"
 )
 
-type varBuffer struct {
-	tickCount int // used to detect changes in data
-	bufOffset int // offset from header
-}
+type VarType = int
 
 const (
-	irsdkVarTypeChar int = iota
-	irsdkVarTypeBool
-	irsdkVarTypeInt
-	irsdkVarTypeBitField
-	irsdkVarTypeFloat
-	irsdkVarTypeDouble
+	VarTypeChar VarType = iota
+	VarTypeBool
+	VarTypeInt
+	VarTypeBitField
+	VarTypeFloat
+	VarTypeDouble
+	VarTypeCount //index, don't use
 )
 
-var irsdkVarTypeBytes = map[int]int{
-	irsdkVarTypeChar:     1,
-	irsdkVarTypeBool:     1,
-	irsdkVarTypeInt:      4,
-	irsdkVarTypeBitField: 4,
-	irsdkVarTypeFloat:    4,
-	irsdkVarTypeDouble:   8,
+var VarTypeBytes = [VarTypeCount]int{
+	1, // char
+	1, // bool
+	4, // int
+	4, // bitField
+	4, // float
+	8, // double
 }
 
-type telemetryVariable struct {
-	VarType     int
-	offset      int // offset fron start of buffer row
-	Count       int // number of entrys (array) so length in bytes would be irsdk_VarTypeBytes[type] * count
-	countAsTime bool
+type varHeader struct {
+	Type        VarType
+	Offset      int
+	Count       int
+	CountAsTime bool
+	Pad         [3]byte
 	Name        string
 	Desc        string
 	Unit        string
-	Value       interface{}
-	rawBytes    []byte
 }
 
-func findLatestBuffer(r reader, h *header) varBuffer {
-	var vb varBuffer
-	foundTickCount := 0
-	for i := 0; i < h.numBuf; i++ {
-		rbuf := make([]byte, 16)
-		_, err := r.ReadAt(rbuf, int64(48+i*16))
-		if err != nil {
-			log.Fatal(err)
-		}
-		currentVb := varBuffer{
-			Byte4ToInt(rbuf[0:4]),
-			Byte4ToInt(rbuf[4:8]),
-		}
-		if foundTickCount < currentVb.tickCount {
-			foundTickCount = currentVb.tickCount
-			vb = currentVb
-		}
+type telemetryVar struct {
+	Header   varHeader
+	RawValue []byte
+}
+
+const varHeaderSize = 16 + MaxString + MaxDesc + MaxString
+
+func (v telemetryVar) Value() interface{} {
+	if v.Header.Count > 1 {
+		return v.Array()
+	} else {
+		return v.Single()
 	}
-	return vb
 }
 
-func readVariableHeaders(r reader, h *header) map[string]telemetryVariable {
-	vars := make(map[string]telemetryVariable, h.numVars)
-	for i := 0; i < h.numVars; i++ {
-		rbuf := make([]byte, 144)
-		_, err := r.ReadAt(rbuf, int64(h.headerOffset+i*144))
+func (v telemetryVar) Single() interface{} {
+	switch v.Header.Type {
+	case VarTypeChar:
+		return v.RawValue[0]
+	case VarTypeBool:
+		return v.RawValue[0] > 0
+	case VarTypeInt:
+		return Byte4ToInt(v.RawValue)
+	case VarTypeBitField:
+		return Byte4toBitField(v.RawValue)
+	case VarTypeFloat:
+		return Byte4ToFloat(v.RawValue)
+	case VarTypeDouble:
+		return Byte8ToFloat(v.RawValue)
+	}
+	return nil
+}
+
+func (v telemetryVar) Array() interface{} {
+	switch v.Header.Type {
+	case VarTypeChar:
+		return v.RawValue
+	case VarTypeBool:
+		arr := make([]bool, v.Header.Count)
+		for i := 0; i < v.Header.Count; i++ {
+			arr[i] = v.RawValue[i] > 0
+		}
+		return arr
+	case VarTypeInt:
+		arr := make([]int, v.Header.Count)
+		for i := 0; i < v.Header.Count; i++ {
+			arr[i] = Byte4ToInt(v.RawValue[i*4 : (i+1)*4])
+		}
+		return arr
+	case VarTypeBitField:
+		arr := make([]string, v.Header.Count)
+		for i := 0; i < v.Header.Count; i++ {
+			arr[i] = Byte4toBitField(v.RawValue[i*4 : (i+1)*4])
+		}
+		return arr
+	case VarTypeFloat:
+		arr := make([]float32, v.Header.Count)
+		for i := 0; i < v.Header.Count; i++ {
+			arr[i] = Byte4ToFloat(v.RawValue[i*4 : (i+1)*4])
+		}
+		return arr
+	case VarTypeDouble:
+		arr := make([]float64, v.Header.Count)
+		for i := 0; i < v.Header.Count; i++ {
+			arr[i] = Byte8ToFloat(v.RawValue[i*8 : (i+1)*8])
+		}
+		return arr
+	}
+	return nil
+}
+
+func (v telemetryVar) String() string {
+	return fmt.Sprintf("%v", v.Value())
+}
+
+func (v telemetryVar) Time() time.Duration {
+	switch v.Header.Type {
+	case VarTypeFloat:
+		return FloatToTime(v.Single().(float32))
+	case VarTypeDouble:
+		return DoubleToTime(v.Single().(float64))
+	default:
+		return 0
+	}
+}
+
+func (v telemetryVar) TimeStr() string {
+	return TimeToStr(v.Time())
+}
+
+func readVariableHeaders(r reader, h *header) map[string]varHeader {
+	vars := make(map[string]varHeader, h.NumVars)
+
+	for i := 0; i < h.NumVars; i++ {
+		rbuf := make([]byte, varHeaderSize)
+
+		_, err := r.ReadAt(rbuf, int64(h.VarHeaderOffset+i*varHeaderSize))
 		if err != nil {
 			log.Fatal(err)
 		}
-		v := telemetryVariable{
+
+		v := varHeader{
 			Byte4ToInt(rbuf[0:4]),
 			Byte4ToInt(rbuf[4:8]),
 			Byte4ToInt(rbuf[8:12]),
 			int(rbuf[12]) > 0,
+			[3]byte{rbuf[12], rbuf[13], rbuf[14]},
 			BytesToString(rbuf[16:48]),
 			BytesToString(rbuf[48:112]),
 			BytesToString(rbuf[112:144]),
-			nil,
-			nil,
 		}
 		vars[v.Name] = v
 	}
 	return vars
 }
 
-func readVariableValues(header *header, reader reader, telemetry map[string]telemetryVariable) int64 {
-	if !sessionStatusOK(header.status) {
-		return 0
+// Return which variable buffer has the latest tick count.
+// It might be the same as the last one read.
+func findLatestBuffer(h *header) *varBuf {
+	lastTickIndex := 0
+
+	for i := 1; i < h.NumBuf; i++ {
+		if h.VarBuf[i].TickCount > h.VarBuf[lastTickIndex].TickCount {
+			lastTickIndex = i
+		}
 	}
 
-	// find latest buffer for variables
-	vb := findLatestBuffer(reader, header)
+	return &h.VarBuf[lastTickIndex]
+}
 
-	for varName, v := range telemetry {
-		bufferSize := irsdkVarTypeBytes[v.VarType] * v.Count
+// This function updates LastTickCount and Telemetry fields of the IRSDK struct.
+func updateTelemetryVariables(sdk *IRSDK) bool {
+	vb := findLatestBuffer(sdk.Header)
+
+	// If the tick count is the same as the last one read, return false.
+	// If it's lower than the last one read, it means the data has been reset, maybe because the sim has been restarted.
+	if vb.TickCount == sdk.LastTickCount {
+		return false
+	}
+
+	headers := readVariableHeaders(sdk.Reader, sdk.Header)
+	vars := make(map[string]telemetryVar, len(headers))
+
+	for varName, v := range headers {
+		bufferSize := VarTypeBytes[v.Type] * v.Count
+
 		rbuf := make([]byte, bufferSize)
-		_, err := reader.ReadAt(rbuf, int64(vb.bufOffset+v.offset))
+
+		_, err := sdk.Reader.ReadAt(rbuf, int64(vb.BufOffset+v.Offset))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// Convert raw bytes to value based on type and count (if > 1 it's an array)
-		switch v.VarType {
-		case irsdkVarTypeChar:
-			if v.Count > 1 {
-				v.Value = make([]string, v.Count)
-				for i := 0; i < v.Count; i++ {
-					v.Value.([]string)[i] = BytesToString(rbuf[i*1 : i*1+1])
-				}
-			} else {
-				v.Value = BytesToString(rbuf)
-			}
-		case irsdkVarTypeBool:
-			if v.Count > 1 {
-				v.Value = make([]bool, v.Count)
-				for i := 0; i < v.Count; i++ {
-					v.Value.([]bool)[i] = rbuf[i] > 0
-				}
-			} else {
-				v.Value = rbuf[0] > 0
-			}
-		case irsdkVarTypeInt:
-			if v.Count > 1 {
-				v.Value = make([]int, v.Count)
-				for i := 0; i < v.Count; i++ {
-					v.Value.([]int)[i] = Byte4ToInt(rbuf[i*4 : i*4+4])
-				}
-			} else {
-				v.Value = Byte4ToInt(rbuf)
-			}
-		case irsdkVarTypeBitField:
-			if v.Count > 1 {
-				v.Value = make([]string, v.Count)
-				for i := 0; i < v.Count; i++ {
-					v.Value.([]string)[i] = Byte4toBitField(rbuf[i*4 : i*4+4])
-				}
-			} else {
-				v.Value = Byte4toBitField(rbuf)
-			}
-		case irsdkVarTypeFloat:
-			if v.Count > 1 {
-				v.Value = make([]float32, v.Count)
-				for i := 0; i < v.Count; i++ {
-					v.Value.([]float32)[i] = Byte4ToFloat(rbuf[i*4 : i*4+4])
-				}
-			} else {
-				v.Value = Byte4ToFloat(rbuf)
-			}
-		case irsdkVarTypeDouble:
-			if v.Count > 1 {
-				v.Value = make([]float64, v.Count)
-				for i := 0; i < v.Count; i++ {
-					v.Value.([]float64)[i] = Byte8ToFloat(rbuf[i*8 : i*8+8])
-				}
-			} else {
-				v.Value = Byte8ToFloat(rbuf)
-			}
-		default:
-			log.Fatal(fmt.Sprintf("Unknown variable type: %d", v.VarType))
+		vars[varName] = telemetryVar{
+			v,
+			rbuf,
 		}
-
-		v.rawBytes = rbuf
-		telemetry[varName] = v
 	}
 
-	return time.Now().Unix()
+	sdk.LastTickCount = vb.TickCount
+	sdk.Telemetry = vars
+	sdk.LastDataTime = time.Now().Unix()
+
+	return true
 }
