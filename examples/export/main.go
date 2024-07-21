@@ -1,11 +1,13 @@
 package main
 
-import "github.com/riccardotornesello/irsdk-go"
+import "fmt"
 
 func main() {
-	var sdk irsdk.IRSDK
-	sdk = irsdk.Init(nil)
-	defer sdk.Close()
-	sdk.ExportIbtTo("data.ibt")
-	sdk.ExportSessionTo("data.yml")
+	fmt.Println("Not implemented yet")
+
+	// var sdk irsdk.IRSDK
+	// sdk = irsdk.Init(nil)
+	// defer sdk.Close()
+	// sdk.ExportIbtTo("data.ibt")
+	// sdk.ExportSessionTo("data.yml")
 }

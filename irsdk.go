@@ -66,3 +66,7 @@ func (sdk *IRSDK) Update(withSession bool) bool {
 	// Otherwise update the data.
 	return updateTelemetryVariables(sdk)
 }
+
+func (sdk *IRSDK) Close() {
+	sdk.Reader.Close()
+}

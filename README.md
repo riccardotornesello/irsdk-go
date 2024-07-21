@@ -2,15 +2,18 @@
 
 Golang implementation of iRacing SDK.
 
-This is a fork of the original [iracing-sdk](https://github.com/quimcalpe/iracing-sdk) package by [quimcalpe](https://github.com/quimcalpe) with some additional features and bug fixes.
+This project is a functional prototype and is not yet ready for production use.
+
+It can be used to read telemetry and session data but some features are still missing.
 
 ## Install
 
 1. Execute `go get github.com/riccardotornesello/irsdk-go`
+2. Enjoy
 
 ## Usage
 
-Simplest example:
+Get session info:
 
 ```go
 package main
@@ -24,12 +27,13 @@ func main() {
     var sdk irsdk.IRSDK
     sdk = irsdk.Init(nil)
     defer sdk.Close()
-    speed, _ := sdk.GetVar("Speed")
-    fmt.Printf("Speed: %s", speed)
+
+    userId := sdk.Session.DriverInfo.DriverUserID
+    fmt.Printf("User ID: %s", userId)
 }
 ```
 
-Get data in a loop live
+Get telemetry in a loop live
 
 ```go
 package main
@@ -47,25 +51,11 @@ func main() {
     defer sdk.Close()
 
     for {
-        sdk.WaitForData(100 * time.Millisecond)
-        speed, err := sdk.GetVar("Speed")
-        if err != nil {
-            log.Fatal(err)
-        }
+        sdk.Update(true)
+        speed := sdk.Telemetry["Speed"]
         fmt.Printf("Speed: %s", speed)
     }
 }
-```
-
-Work with an offline ibt file
-
-```go
-reader, err := os.Open("data.ibt")
-if err != nil {
-    log.Fatal(err)
-}
-sdk = irsdk.Init(reader)
-...
 ```
 
 ## Examples
@@ -75,3 +65,15 @@ sdk = irsdk.Init(reader)
 - Broadcast [Commands](examples/commands) to iRacing
 
 - Simple [Dashboard](examples/dashboard) for external monitors or phones
+
+- [Timing Console](examples/times) to show live timing data
+
+## Missing features
+
+- [ ] Sending commands to iRacing
+- [ ] Better documentation
+
+## Credits
+
+- [quimcalpe's iracing-sdk](https://github.com/quimcalpe/iracing-sdk) package for the original package, used to better understand the iRacing SDK
+- Iracing C++ SDK for the original implementation of the SDK, useful to get all the defines and structs

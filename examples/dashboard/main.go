@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 	"github.com/riccardotornesello/irsdk-go"
 )
 
-var sdk irsdk.IRSDK
+var sdk *irsdk.IRSDK
 var homeTemplate *template.Template
 
 func main() {
@@ -79,59 +80,48 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		online := true
 		for {
-			sdk.WaitForData(100 * time.Millisecond)
+			sdk.Update(true)
 
-			weather, err := sdk.GetSessionData("WeekendInfo:TrackSkies")
-			checkErr(err)
+			session := sdk.Session
+			weather := session.WeekendInfo.TrackSkies
+
 			// driverIdx, err := sdk.GetSessionData("DriverInfo:DriverCarIdx")
 			// checkErr(err)
 			// incidentCount, err := sdk.GetSessionData("DriverInfo:Drivers:{" + driverIdx + "}CurDriverIncidentCount")
 			// checkErr(err)
 
-			rpmL, err := getRPMData(&sdk)
+			rpmL, err := getRPMData(sdk)
 			checkErr(err)
 
-			engineWarnings, err := sdk.GetVar("EngineWarnings")
-			checkErr(err)
-			airTemp, err := sdk.GetVar("AirTemp")
-			checkErr(err)
-			trackTemp, err := sdk.GetVar("TrackTempCrew")
-			checkErr(err)
-			units, err := sdk.GetVar("DisplayUnits")
-			checkErr(err)
-			fuel, err := sdk.GetVar("FuelLevel")
-			checkErr(err)
-			speed, err := sdk.GetVar("Speed")
-			checkErr(err)
-			gear, err := sdk.GetVar("Gear")
-			checkErr(err)
-			lapLastLapTime, err := sdk.GetVar("LapLastLapTime")
-			checkErr(err)
-			lapBestLapTime, err := sdk.GetVar("LapBestLapTime")
-			checkErr(err)
-			sessionTimeRemain, err := sdk.GetVar("SessionTimeRemain")
-			checkErr(err)
-			playerCarClassPosition, err := sdk.GetVar("PlayerCarClassPosition")
-			checkErr(err)
-			rpm, err := sdk.GetVar("RPM")
-			checkErr(err)
+			engineWarnings := sdk.Telemetry["EngineWarnings"]
+			airTemp := sdk.Telemetry["AirTemp"]
+			trackTemp := sdk.Telemetry["TrackTempCrew"]
+			units := sdk.Telemetry["DisplayUnits"]
+			fuel := sdk.Telemetry["FuelLevel"]
+			speed := sdk.Telemetry["Speed"]
+			gear := sdk.Telemetry["Gear"]
+			lapLastLapTime := sdk.Telemetry["LapLastLapTime"]
+			lapBestLapTime := sdk.Telemetry["LapBestLapTime"]
+			sessionTimeRemain := sdk.Telemetry["SessionTimeRemain"]
+			playerCarClassPosition := sdk.Telemetry["PlayerCarClassPosition"]
+			rpm := sdk.Telemetry["RPM"]
 
 			d := data{
 				sdk.IsConnected(),
 				weather,
 				rpmL,
-				engineWarnings.Value,
-				airTemp.Value,
-				trackTemp.Value,
-				units.Value,
-				fuel.Value,
-				speed.Value,
-				gear.Value,
-				lapLastLapTime.Value,
-				lapBestLapTime.Value,
-				sessionTimeRemain.Value,
-				playerCarClassPosition.Value,
-				rpm.Value,
+				engineWarnings.Value(),
+				airTemp.Value(),
+				trackTemp.Value(),
+				units.Value(),
+				fuel.Value(),
+				speed.Value(),
+				gear.Value(),
+				lapLastLapTime.Value(),
+				lapBestLapTime.Value(),
+				sessionTimeRemain.Value(),
+				playerCarClassPosition.Value(),
+				rpm.Value(),
 			}
 			message, err = json.Marshal(d)
 			if err != nil {
@@ -171,21 +161,12 @@ func checkErr(err error) {
 }
 
 func getRPMData(sdl *irsdk.IRSDK) (rpmLights, error) {
-	first, err := sdk.GetSessionData("DriverInfo:DriverCarSLFirstRPM")
-	if err != nil {
-		return rpmLights{}, err
-	}
-	last, err := sdk.GetSessionData("DriverInfo:DriverCarSLLastRPM")
-	if err != nil {
-		return rpmLights{}, err
-	}
-	blink, err := sdk.GetSessionData("DriverInfo:DriverCarSLBlinkRPM")
-	if err != nil {
-		return rpmLights{}, err
-	}
-	shift, err := sdk.GetSessionData("DriverInfo:DriverCarSLShiftRPM")
-	if err != nil {
-		return rpmLights{}, err
-	}
+	session := sdl.Session
+
+	first := fmt.Sprintf("%d", session.DriverInfo.DriverCarSLFirstRPM)
+	last := fmt.Sprintf("%d", session.DriverInfo.DriverCarSLLastRPM)
+	blink := fmt.Sprintf("%d", session.DriverInfo.DriverCarSLBlinkRPM)
+	shift := fmt.Sprintf("%d", session.DriverInfo.DriverCarSLShiftRPM)
+
 	return rpmLights{first, last, blink, shift}, nil
 }

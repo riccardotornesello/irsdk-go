@@ -10,15 +10,11 @@ func main() {
 	sdk := irsdk.Init(nil)
 	defer sdk.Close()
 
-	lapTimes, err := sdk.GetVar("CarIdxLastLapTime")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	lapTimes := sdk.Telemetry["CarIdxLastLapTime"]
 
-	session := sdk.GetSession()
+	session := sdk.Session
 
 	for i := range session.DriverInfo.Drivers {
-		fmt.Println(session.DriverInfo.Drivers[i].CarNumber, irsdk.FloatToTimeStr(lapTimes.Value.([]float32)[i]))
+		fmt.Println(session.DriverInfo.Drivers[i].CarNumber, irsdk.FloatToTimeStr(lapTimes.Array().([]float32)[i]))
 	}
 }
