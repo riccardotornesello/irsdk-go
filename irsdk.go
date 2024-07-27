@@ -70,3 +70,11 @@ func (sdk *IRSDK) Update(withSession bool) bool {
 func (sdk *IRSDK) Close() {
 	sdk.Reader.Close()
 }
+
+func (sdk *IRSDK) GetVar(name string) (interface{}, bool) {
+	v, ok := sdk.Telemetry[name]
+	if !ok {
+		return nil, false
+	}
+	return v.Value(), true
+}
