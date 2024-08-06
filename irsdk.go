@@ -20,7 +20,7 @@ type IRSDK struct {
 	LastDataTime  int64
 
 	Header    *header
-	Telemetry map[string]telemetryVar
+	Telemetry map[string]TelemetryVar
 	Session   *Session
 }
 
@@ -39,7 +39,7 @@ func Init(r reader) *IRSDK {
 		Reader:        r,
 		LastTickCount: 0,
 		Header:        header,
-		Telemetry:     make(map[string]telemetryVar),
+		Telemetry:     make(map[string]TelemetryVar),
 		Session:       nil,
 	}
 

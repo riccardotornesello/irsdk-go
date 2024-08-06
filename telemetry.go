@@ -38,14 +38,14 @@ type varHeader struct {
 	Unit        string
 }
 
-type telemetryVar struct {
+type TelemetryVar struct {
 	Header   varHeader
 	RawValue []byte
 }
 
 const varHeaderSize = 16 + MaxString + MaxDesc + MaxString
 
-func (v telemetryVar) Value() interface{} {
+func (v TelemetryVar) Value() interface{} {
 	if v.Header.Count > 1 {
 		return v.Array()
 	} else {
@@ -53,7 +53,7 @@ func (v telemetryVar) Value() interface{} {
 	}
 }
 
-func (v telemetryVar) Single() interface{} {
+func (v TelemetryVar) Single() interface{} {
 	switch v.Header.Type {
 	case VarTypeChar:
 		return v.RawValue[0]
@@ -71,7 +71,7 @@ func (v telemetryVar) Single() interface{} {
 	return nil
 }
 
-func (v telemetryVar) Array() interface{} {
+func (v TelemetryVar) Array() interface{} {
 	switch v.Header.Type {
 	case VarTypeChar:
 		return v.RawValue
@@ -109,11 +109,11 @@ func (v telemetryVar) Array() interface{} {
 	return nil
 }
 
-func (v telemetryVar) String() string {
+func (v TelemetryVar) String() string {
 	return fmt.Sprintf("%v", v.Value())
 }
 
-func (v telemetryVar) Time() time.Duration {
+func (v TelemetryVar) Time() time.Duration {
 	switch v.Header.Type {
 	case VarTypeFloat:
 		return FloatToTime(v.Single().(float32))
@@ -124,7 +124,7 @@ func (v telemetryVar) Time() time.Duration {
 	}
 }
 
-func (v telemetryVar) TimeStr() string {
+func (v TelemetryVar) TimeStr() string {
 	return TimeToStr(v.Time())
 }
 
@@ -179,7 +179,7 @@ func updateTelemetryVariables(sdk *IRSDK) bool {
 	}
 
 	headers := readVariableHeaders(sdk.Reader, sdk.Header)
-	vars := make(map[string]telemetryVar, len(headers))
+	vars := make(map[string]TelemetryVar, len(headers))
 
 	for varName, v := range headers {
 		bufferSize := VarTypeBytes[v.Type] * v.Count
@@ -191,7 +191,7 @@ func updateTelemetryVariables(sdk *IRSDK) bool {
 			log.Fatal(err)
 		}
 
-		vars[varName] = telemetryVar{
+		vars[varName] = TelemetryVar{
 			v,
 			rbuf,
 		}
