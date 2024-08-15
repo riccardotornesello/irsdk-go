@@ -22,8 +22,8 @@ func Byte8ToFloat(in []byte) float64 {
 	return math.Float64frombits(bits)
 }
 
-func Byte4toBitField(in []byte) string {
-	return fmt.Sprintf("0x%x", int(binary.LittleEndian.Uint32(in)))
+func Byte4toBitField(in []byte) uint32 {
+	return binary.LittleEndian.Uint32(in)
 }
 
 func BytesToString(in []byte) string {
