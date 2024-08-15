@@ -88,7 +88,7 @@ func (v TelemetryVar) Array() interface{} {
 		}
 		return arr
 	case VarTypeBitField:
-		arr := make([]string, v.Header.Count)
+		arr := make([]uint32, v.Header.Count)
 		for i := 0; i < v.Header.Count; i++ {
 			arr[i] = Byte4toBitField(v.RawValue[i*4 : (i+1)*4])
 		}
